@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Link, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { supabase, money, useApp } from './lib.jsx'
 import Admin, { statusLabel } from './Admin.jsx'
+import Privacy from './Privacy.jsx'
 
 // Set VITE_ENABLE_MPESA=true only once a live Till/Paybill is approved.
 const MPESA = import.meta.env.VITE_ENABLE_MPESA === 'true'
@@ -198,5 +199,5 @@ function Orders() {
 }
 
 export default function App() {
-  return <><ScrollToTop /><Header /><Routes><Route path="/" element={<Shop />} /><Route path="/checkout" element={<Checkout />} /><Route path="/order/:id" element={<OrderView />} /><Route path="/orders" element={<Orders />} /><Route path="/admin" element={<Admin />} /><Route path="*" element={<main className="wrap narrow"><h1>Page not found</h1><Back /></main>} /></Routes><CartDrawer /></>
+  return <><ScrollToTop /><Header /><Routes><Route path="/" element={<Shop />} /><Route path="/checkout" element={<Checkout />} /><Route path="/order/:id" element={<OrderView />} /><Route path="/orders" element={<Orders />} /><Route path="/admin" element={<Admin />} /><Route path="/privacy" element={<Privacy />} /><Route path="*" element={<main className="wrap narrow"><h1>Page not found</h1><Back /></main>} /></Routes><footer className="foot"><Link to="/privacy">Privacy policy</Link></footer><CartDrawer /></>
 }

@@ -42,3 +42,5 @@ select{padding:.5rem;border-radius:8px;border:1px solid var(--line);background:v
 .agrid{display:grid;gap:1rem;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));margin-top:1rem}
 .prod{display:grid;gap:.5rem;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));align-items:center;margin-bottom:.8rem}
 .chk{display:flex;align-items:center;gap:.4rem;margin:0}.chk input{width:auto;margin:0}
+
+.foot{text-align:center;padding:2rem 1rem;color:var(--muted);font-size:.9rem}.foot a{text-decoration:underline}.legal h2{font-size:1.15rem;margin-top:1.5rem}
