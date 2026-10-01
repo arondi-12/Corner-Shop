@@ -9,6 +9,12 @@ export function AppProvider({ children }) {
   const [user, setUser] = useState(null)
   const [ready, setReady] = useState(false)
   const [isAdmin, setIsAdmin] = useState(null)
+  const [authError, setAuthError] = useState('')
+  useEffect(() => { // show sign-in errors that Supabase puts in the address bar, then clean the URL
+    const q = new URLSearchParams(window.location.hash.slice(1) || window.location.search)
+    const msg = q.get('error_description')
+    if (msg) { setAuthError(msg.replace(/\+/g, ' ')); window.history.replaceState(null, '', window.location.pathname) }
+  }, [])
   const [open, setOpen] = useState(false)
   const [cart, setCart] = useState(() => { try { return JSON.parse(localStorage.getItem('cart')) || {} } catch { return {} } })
   useEffect(() => {
@@ -38,7 +44,10 @@ export function AppProvider({ children }) {
   const items = Object.values(cart)
   const total = items.reduce((s, i) => s + i.p.price_cents * i.qty, 0)
   const count = items.reduce((s, i) => s + i.qty, 0)
-  const signIn = () => supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href } })
+  const signIn = () => supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.origin + window.location.pathname, queryParams: { prompt: 'select_account' } } })
   const signOut = () => supabase.auth.signOut()
-  return <Ctx.Provider value={{ user, ready, isAdmin, cart, items, total, count, add, remove, clear: () => setCart({}), open, setOpen, signIn, signOut }}>{children}</Ctx.Provider>
+  return <Ctx.Provider value={{ user, ready, isAdmin, cart, items, total, count, add, remove, clear: () => setCart({}), open, setOpen, signIn, signOut }}>
+    {authError && <div className="notice" role="alert">Sign-in problem: {authError} <button className="link" onClick={() => setAuthError('')}>Dismiss</button></div>}
+    {children}
+  </Ctx.Provider>
 }
