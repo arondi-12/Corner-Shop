@@ -8,6 +8,7 @@ export const useApp = () => useContext(Ctx)
 export function AppProvider({ children }) {
   const [user, setUser] = useState(null)
   const [ready, setReady] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(null)
   const [open, setOpen] = useState(false)
   const [cart, setCart] = useState(() => { try { return JSON.parse(localStorage.getItem('cart')) || {} } catch { return {} } })
   useEffect(() => {
@@ -15,7 +16,19 @@ export function AppProvider({ children }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_, s) => setUser(s?.user ?? null))
     return () => subscription.unsubscribe()
   }, [])
+  useEffect(() => {
+    if (!user) { setIsAdmin(false); return }
+    supabase.from('admins').select('user_id').eq('user_id', user.id).maybeSingle().then(({ data }) => setIsAdmin(!!data))
+  }, [user])
   useEffect(() => { try { localStorage.setItem('cart', JSON.stringify(cart)) } catch {} }, [cart])
+  useEffect(() => { // drop sold-out items and refresh prices saved from an earlier visit
+    const ids = Object.keys(cart); if (!ids.length) return
+    supabase.from('products').select('*').in('id', ids).eq('in_stock', true).then(({ data }) => {
+      if (!data) return
+      const fresh = Object.fromEntries(data.map((p) => [p.id, p]))
+      setCart((c) => Object.fromEntries(Object.entries(c).filter(([id]) => fresh[id]).map(([id, v]) => [id, { ...v, p: fresh[id] }])))
+    })
+  }, [])
   const add = (p, d = 1) => setCart((c) => {
     const q = (c[p.id]?.qty || 0) + d, n = { ...c }
     if (q <= 0) delete n[p.id]; else n[p.id] = { p, qty: q }
@@ -27,5 +40,5 @@ export function AppProvider({ children }) {
   const count = items.reduce((s, i) => s + i.qty, 0)
   const signIn = () => supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: window.location.href } })
   const signOut = () => supabase.auth.signOut()
-  return <Ctx.Provider value={{ user, ready, cart, items, total, count, add, remove, clear: () => setCart({}), open, setOpen, signIn, signOut }}>{children}</Ctx.Provider>
+  return <Ctx.Provider value={{ user, ready, isAdmin, cart, items, total, count, add, remove, clear: () => setCart({}), open, setOpen, signIn, signOut }}>{children}</Ctx.Provider>
 }

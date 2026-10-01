@@ -1,12 +1,13 @@
+const esc = (v: any) => String(v ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!))
 const kes = (c: number) => 'KES ' + (c / 100).toLocaleString()
 
 export async function sendOrderEmail(o: any) {
-  const rows = o.order_items.map((i: any) => `<tr><td>${i.qty} × ${i.name}</td><td align="right">${kes(i.unit_price_cents * i.qty)}</td></tr>`).join('')
-  const pay = o.payment_status === 'paid' ? `Paid via M-Pesa (receipt ${o.mpesa_receipt ?? 'n/a'}).` : 'Pay on delivery.'
+  const rows = o.order_items.map((i: any) => `<tr><td>${i.qty} × ${esc(i.name)}</td><td align="right">${kes(i.unit_price_cents * i.qty)}</td></tr>`).join('')
+  const pay = o.payment_status === 'paid' ? `Paid via M-Pesa (receipt ${esc(o.mpesa_receipt ?? 'n/a')}).` : 'Pay on delivery.'
   const html = `<div style="font-family:sans-serif;max-width:480px"><h2>Thanks, your order is in</h2>
-    <p>Order #${o.id.slice(0, 8)}. We'll call ${o.phone} if we need anything.</p>
+    <p>Order #${o.id.slice(0, 8)}. We'll call ${esc(o.phone)} if we need anything.</p>
     <table width="100%">${rows}<tr><td><b>Total</b></td><td align="right"><b>${kes(o.total_cents)}</b></td></tr></table>
-    <p>Delivering to: ${o.address}</p><p>${pay}</p></div>`
+    <p>Delivering to: ${esc(o.address)}</p><p>${pay}</p></div>`
   const form = new FormData()
   form.set('from', Deno.env.get('MAILGUN_FROM')!)
   form.set('to', o.email)
