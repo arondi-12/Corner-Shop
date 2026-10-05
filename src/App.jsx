@@ -35,7 +35,7 @@ function Header() {
         {user ? <>
           <span className="avatar" title={user.email}>{user.user_metadata?.avatar_url ? <img src={user.user_metadata.avatar_url} alt="" referrerPolicy="no-referrer" /> : (user.email || '?')[0].toUpperCase()}</span>
           <button className="signout" onClick={signOut}><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>Sign out</button>
-        </> : <GoogleButton onClick={signIn} />}
+        </> : <Link className="btn" to="/login">Sign in</Link>}
         <button className="cartbtn" onClick={() => setOpen(true)} aria-label="Open cart">Cart <b>{count}</b></button>
       </nav>
     </header>
@@ -122,7 +122,7 @@ function Checkout() {
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value })
   if (!ready) return <main className="wrap narrow"><div className="card skel" /></main>
   if (!items.length) return <main className="wrap narrow"><h1>Checkout</h1><p className="muted">Your cart is empty.</p><Link className="btn" to="/">Browse the shop</Link></main>
-  if (ready && !user) return <main className="wrap narrow"><Back /><h1>Sign in to check out</h1><p className="muted">We use your Google account so we can send your confirmation and show your order history.</p><GoogleButton big onClick={signIn} label="Continue with Google" /></main>
+  if (ready && !user) return <main className="wrap narrow"><Back /><h1>Sign in to check out</h1><p className="muted">We use your Google account so we can send your confirmation and show your order history.</p><Link className="btn big" to="/login?next=/checkout">Sign in or create account</Link></main>
   const submit = async (e) => {
     e.preventDefault(); setErr('')
     if (method === 'mpesa' && !/^(254|0)?[17]\d{8}$/.test(f.phone.replace(/\D/g, ''))) { setErr('Enter a valid Safaricom number, e.g. 0712 345 678'); return }
@@ -189,7 +189,7 @@ function Orders() {
   const badge = (o) => o.payment_status === 'paid' ? ['Paid', 'ok'] : o.payment_method === 'mpesa' ? [o.payment_status === 'pending' ? 'Awaiting payment' : 'Unpaid', 'warn'] : ['Pay on delivery', 'info']
   return (
     <main className="wrap narrow"><Back /><h1>My orders</h1>
-      {ready && !user && <><p className="muted">Sign in to see your orders.</p><GoogleButton onClick={signIn} /></>}
+      {ready && !user && <><p className="muted">Sign in to see your orders.</p><Link className="btn" to="/login?next=/orders">Sign in</Link></>}
       {user && !list && <div className="card skel" />}
       {list && !list.length && <><p className="muted">No orders yet. Your first one will show up here.</p><Link className="btn" to="/">Start shopping</Link></>}
       {(list || []).map((o) => { const [t, k] = badge(o); return (
@@ -198,6 +198,38 @@ function Orders() {
   )
 }
 
+function Login() {
+  const { user, signIn } = useApp()
+  const nav = useNavigate()
+  const [sp] = useSearchParams()
+  const next = sp.get('next') || '/'
+  const [mode, setMode] = useState('in')
+  const [f, setF] = useState({ email: '', password: '' })
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState('')
+  useEffect(() => { if (user) nav(next, { replace: true }) }, [user])
+  const submit = async (e) => {
+    e.preventDefault(); setBusy(true); setMsg('')
+    const { data, error } = mode === 'in' ? await supabase.auth.signInWithPassword(f) : await supabase.auth.signUp(f)
+    setBusy(false)
+    if (error) setMsg(error.message)
+    else if (mode === 'up' && !data.session) setMsg('Account created. Check your email to confirm it, then sign in.')
+  }
+  return (
+    <main className="wrap narrow"><Back />
+      <h1>{mode === 'in' ? 'Sign in' : 'Create account'}</h1>
+      <form onSubmit={submit}>
+        <label>Email<input required type="email" autoComplete="email" value={f.email} onChange={(e) => setF({ ...f, email: e.target.value })} /></label>
+        <label>Password<input required type="password" minLength={6} autoComplete={mode === 'in' ? 'current-password' : 'new-password'} value={f.password} onChange={(e) => setF({ ...f, password: e.target.value })} /></label>
+        {msg && <p className="error">{msg}</p>}
+        <button className="btn big" disabled={busy}>{busy ? 'Please wait…' : mode === 'in' ? 'Sign in' : 'Create account'}</button>
+      </form>
+      <p className="muted center">{mode === 'in' ? 'New here?' : 'Already have an account?'} <button className="link" onClick={() => setMode(mode === 'in' ? 'up' : 'in')}>{mode === 'in' ? 'Create an account' : 'Sign in'}</button></p>
+      <GoogleButton big onClick={signIn} label="Continue with Google" />
+    </main>
+  )
+}
+
 export default function App() {
-  return <><ScrollToTop /><Header /><Routes><Route path="/" element={<Shop />} /><Route path="/checkout" element={<Checkout />} /><Route path="/order/:id" element={<OrderView />} /><Route path="/orders" element={<Orders />} /><Route path="/admin" element={<Admin />} /><Route path="/privacy" element={<Privacy />} /><Route path="*" element={<main className="wrap narrow"><h1>Page not found</h1><Back /></main>} /></Routes><footer className="foot"><Link to="/privacy">Privacy policy</Link></footer><CartDrawer /></>
+  return <><ScrollToTop /><Header /><Routes><Route path="/" element={<Shop />} /><Route path="/checkout" element={<Checkout />} /><Route path="/order/:id" element={<OrderView />} /><Route path="/orders" element={<Orders />} /><Route path="/admin" element={<Admin />} /><Route path="/login" element={<Login />} /><Route path="/privacy" element={<Privacy />} /><Route path="*" element={<main className="wrap narrow"><h1>Page not found</h1><Back /></main>} /></Routes><footer className="foot"><Link to="/privacy">Privacy policy</Link></footer><CartDrawer /></>
 }

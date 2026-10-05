@@ -46,3 +46,5 @@ select{padding:.5rem;border-radius:8px;border:1px solid var(--line);background:v
 .foot{text-align:center;padding:2rem 1rem;color:var(--muted);font-size:.9rem}.foot a{text-decoration:underline}.legal h2{font-size:1.15rem;margin-top:1.5rem}
 
 .notice{background:#f2a72e33;border-bottom:1px solid var(--mango);padding:.7rem 1.2rem;text-align:center}
+
+.btn{text-align:center}.center{text-align:center}
