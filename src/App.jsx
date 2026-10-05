@@ -32,6 +32,7 @@ function Header() {
       <nav>
         {isAdmin && <Link to="/admin">Admin</Link>}
         {user && <Link to="/orders">My orders</Link>}
+        {user && <Link to="/account">Account</Link>}
         {user ? <>
           <span className="avatar" title={user.email}>{user.user_metadata?.avatar_url ? <img src={user.user_metadata.avatar_url} alt="" referrerPolicy="no-referrer" /> : (user.email || '?')[0].toUpperCase()}</span>
           <button className="signout" onClick={signOut}><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>Sign out</button>
@@ -198,6 +199,35 @@ function Orders() {
   )
 }
 
+function Account() {
+  const { user, ready } = useApp()
+  const [pw, setPw] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [msg, setMsg] = useState('')
+  const [ok, setOk] = useState(false)
+  if (!ready) return <main className="wrap narrow"><div className="card skel" /></main>
+  if (!user) return <main className="wrap narrow"><Back /><h1>Account</h1><Link className="btn" to="/login?next=/account">Sign in</Link></main>
+  const save = async (e) => {
+    e.preventDefault(); setBusy(true); setMsg(''); setOk(false)
+    const { error } = await supabase.auth.updateUser({ password: pw })
+    setBusy(false)
+    if (error) setMsg(error.message); else { setOk(true); setPw('') }
+  }
+  return (
+    <main className="wrap narrow"><Back /><h1>Account</h1>
+      <p className="muted">Signed in as {user.email}</p>
+      <form onSubmit={save}>
+        <h2>Set or change your password</h2>
+        <p className="muted">Signed in with Google? Add a password so you can also sign in with your email on the mobile app.</p>
+        <label>New password<input required type="password" minLength={6} autoComplete="new-password" value={pw} onChange={(e) => setPw(e.target.value)} /></label>
+        {msg && <p className="error">{msg}</p>}
+        {ok && <p className="muted">Password saved. You can now sign in with your email and this password.</p>}
+        <button className="btn big" disabled={busy}>{busy ? 'Saving…' : 'Save password'}</button>
+      </form>
+    </main>
+  )
+}
+
 function Login() {
   const { user, signIn } = useApp()
   const nav = useNavigate()
@@ -212,7 +242,7 @@ function Login() {
     e.preventDefault(); setBusy(true); setMsg('')
     const { data, error } = mode === 'in' ? await supabase.auth.signInWithPassword(f) : await supabase.auth.signUp(f)
     setBusy(false)
-    if (error) setMsg(error.message)
+    if (error) setMsg(mode === 'in' && /invalid login/i.test(error.message) ? 'Wrong email or password. If you normally sign in with Google, use "Continue with Google" below, then add a password on the Account page.' : error.message)
     else if (mode === 'up' && !data.session) setMsg('Account created. Check your email to confirm it, then sign in.')
   }
   return (
@@ -231,5 +261,5 @@ function Login() {
 }
 
 export default function App() {
-  return <><ScrollToTop /><Header /><Routes><Route path="/" element={<Shop />} /><Route path="/checkout" element={<Checkout />} /><Route path="/order/:id" element={<OrderView />} /><Route path="/orders" element={<Orders />} /><Route path="/admin" element={<Admin />} /><Route path="/login" element={<Login />} /><Route path="/privacy" element={<Privacy />} /><Route path="*" element={<main className="wrap narrow"><h1>Page not found</h1><Back /></main>} /></Routes><footer className="foot"><Link to="/privacy">Privacy policy</Link></footer><CartDrawer /></>
+  return <><ScrollToTop /><Header /><Routes><Route path="/" element={<Shop />} /><Route path="/checkout" element={<Checkout />} /><Route path="/order/:id" element={<OrderView />} /><Route path="/orders" element={<Orders />} /><Route path="/admin" element={<Admin />} /><Route path="/login" element={<Login />} /><Route path="/account" element={<Account />} /><Route path="/privacy" element={<Privacy />} /><Route path="*" element={<main className="wrap narrow"><h1>Page not found</h1><Back /></main>} /></Routes><footer className="foot"><Link to="/privacy">Privacy policy</Link></footer><CartDrawer /></>
 }
