@@ -44,6 +44,15 @@ function ProductRow({ p, onSaved }) {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const set = (k) => (e) => setD({ ...d, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value })
+  const upload = async (e) => {
+    const f = e.target.files?.[0]; if (!f) return
+    setBusy(true); setErr('')
+    const path = `${crypto.randomUUID()}-${f.name.replace(/[^\w.-]/g, '_')}`
+    const { error } = await supabase.storage.from('product-images').upload(path, f, { cacheControl: '31536000' })
+    setBusy(false)
+    if (error) return setErr(error.message)
+    setD((x) => ({ ...x, image_url: supabase.storage.from('product-images').getPublicUrl(path).data.publicUrl }))
+  }
   const save = async (e) => {
     e.preventDefault(); setBusy(true); setErr('')
     const row = { name: d.name.trim(), description: d.description, category: d.category.trim(), price_cents: Math.round(Number(d.price) * 100), emoji: d.emoji, image_url: d.image_url || null, in_stock: d.in_stock }
@@ -60,6 +69,8 @@ function ProductRow({ p, onSaved }) {
       <input required type="number" min="0" step="any" placeholder="Price (KES)" value={d.price} onChange={set('price')} />
       <input placeholder="Emoji" value={d.emoji} onChange={set('emoji')} />
       <input placeholder="Image URL (optional)" value={d.image_url} onChange={set('image_url')} />
+      <label className="file">Or upload a photo<input type="file" accept="image/*" onChange={upload} /></label>
+      {d.image_url && <img className="thumb" src={d.image_url} alt="Product preview" />}
       <input placeholder="Description" value={d.description} onChange={set('description')} />
       <label className="chk"><input type="checkbox" checked={d.in_stock} onChange={set('in_stock')} /> In stock</label>
       <button className="btn" disabled={busy}>{busy ? 'Saving…' : p ? 'Save' : 'Add product'}</button>
